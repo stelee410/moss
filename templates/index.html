@@ -1,0 +1,6 @@
+{% extends 'layout.html' %}
+{% from 'bootstrap5/form.html' import render_form, render_field, render_form_row %}
+{% block content %}
+<h1>MOSS - 人工智能知识库平台</h1>
+{{ render_form(knowledge_form) }}
+{% endblock %}
