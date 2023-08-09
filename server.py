@@ -234,9 +234,9 @@ def index():
             qa_list = build_question_answer(form.content.data)
     return render_template('index.html', knowledge_form=form, qa_list=qa_list)
 
-@app.route('/example')
-def example():
-    return render_template('example.html')
+@app.route('/download')
+def download():
+    return render_template('download.html')
 
 @app.route('/form', methods=['GET', 'POST'])
 def test_form():
