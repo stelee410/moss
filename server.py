@@ -7,6 +7,11 @@ from wtforms.validators import DataRequired, Length, Regexp
 from wtforms.fields import *
 from flask_bootstrap import Bootstrap5, SwitchField
 from flask_sqlalchemy import SQLAlchemy
+import openai
+
+import os
+os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+os.environ['https_proxy'] = 'http://127.0.0.1:7890'
 
 app = Flask(__name__)
 app.secret_key = 'dev'
@@ -56,7 +61,7 @@ class ExampleForm(FlaskForm):
 
 class KnowledgeForm(FlaskForm):
     content = TextAreaField('输入内容，用换行来区分逻辑内容')
-    submit = SubmitField('提交')
+    submit = SubmitField('添加')
 
 class HelloForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(1, 20)])
@@ -173,10 +178,61 @@ def before_first_request_func():
         db.session.add(m)
     db.session.commit()
 
+def get_question(data):
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=f"Write questions based on the text below\n\nText: {data}\n\nQuestions:\n1.",
+            temperature=0,
+            max_tokens=257,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=["\n\n"]
+        )
+        return "1."+response['choices'][0]['text']
+    except Exception as error:
+        print("An exception occurred:", error)
+        return ""
+    
+def get_answers(data, questions):
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=f"Write answer based on the text below\n\nText: {data}\n\nQuestions:\n{questions}\n\nAnswers:\n1.",
+            temperature=0,
+            max_tokens=257,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0
+        )
+        return "1."+response['choices'][0]['text']
+    except Exception as e:
+        print (e)
+        return ""
+def get_question_answer(data):
+    questions = get_question(data)
+    answers = get_answers(data, questions)
+    q_array = questions.splitlines()
+    a_array = answers.splitlines()
+    qa=[]
+    for i in range(min(len(q_array),len(a_array))):
+        qa.append((q_array[i],a_array[i]))
+    return qa
 
-@app.route('/')
+def build_question_answer(data):
+    return [get_question_answer(element) for element in data.splitlines() if element != '']
+
+@app.route('/', methods=['GET','POST'])
 def index():
-    return render_template('index.html', knowledge_form=KnowledgeForm())
+    form = KnowledgeForm()
+    qa_list = []
+    if form.validate_on_submit():
+        if form.content.data=='':
+            flash('输入内容不能为空')
+        else:
+            qa_list = build_question_answer(form.content.data)
+    return render_template('index.html', knowledge_form=form, qa_list=qa_list)
 
 @app.route('/example')
 def example():

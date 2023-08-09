@@ -3,4 +3,15 @@
 {% block content %}
 <h1>MOSS - 人工智能知识库平台</h1>
 {{ render_form(knowledge_form) }}
+<br/>
+<div class="container">
+    {% for qa in qa_list %}
+        {% for q, a in qa %}
+            <p>
+                {{q}}<br/>
+                {{a}}
+            </p>
+        {% endfor %}
+    {% endfor %}
+</div>
 {% endblock %}
